@@ -29,32 +29,32 @@ namespace FolderSynchronizer
                     return;
                 }
 
-                // Setup logging
-                _logWriter = new StreamWriter(_logFilePath, true)
-                {
+                
+                   _logWriter = new StreamWriter(_logFilePath, true)
+                   {
                     AutoFlush = true
-                };
+                   };
 
-                // Initial synchronization
+               
                 LogMessage("Initial synchronization started");
                 SynchronizeFolders();
                 LogMessage("Initial synchronization completed");
 
-                // Setup file system watcher for source folder
+                
                 SetupFileSystemWatcher();
 
-                // Setup periodic synchronization
+                
                 _syncTimer = new Timer(SyncTimerCallback, null,
                     _syncIntervalInSeconds * 1000,
                     _syncIntervalInSeconds * 1000);
 
-                Console.WriteLine($"Synchronization service started. Press Ctrl+C to exit.");
-                Console.WriteLine($"Source folder: {_sourceFolder}");
-                Console.WriteLine($"Replica folder: {_replicaFolder}");
-                Console.WriteLine($"Log file: {_logFilePath}");
+                Console.WriteLine($"Synchronization service started");
+                Console.WriteLine($"Source folder:{_sourceFolder}");
+                Console.WriteLine($"Replica folder:{_replicaFolder}");
+                Console.WriteLine($"Log file:{_logFilePath}");
                 Console.WriteLine($"Sync interval: {_syncIntervalInSeconds} seconds");
 
-                // Keep the application running until user presses Ctrl+C
+              
                 Console.CancelKeyPress += (sender, e) =>
                 {
                     LogMessage("Synchronization service stopping");
@@ -64,7 +64,7 @@ namespace FolderSynchronizer
                     LogMessage("Synchronization service stopped");
                 };
 
-                // Wait indefinitely
+                
                 Thread.Sleep(Timeout.Infinite);
             }
             catch (Exception ex)
@@ -88,23 +88,23 @@ namespace FolderSynchronizer
             _logFilePath = args[2];
             _syncIntervalInSeconds = args.Length > 3 && int.TryParse(args[3], out int interval)
                 ? interval
-                : 60; // Default to 60 seconds if not specified
+                : 60;
 
-            // Validate folder paths
+            
             if (!Directory.Exists(_sourceFolder))
             {
                 Console.WriteLine($"Error: Source folder '{_sourceFolder}' does not exist.");
                 return false;
             }
 
-            // Create replica folder if it doesn't exist
+            
             if (!Directory.Exists(_replicaFolder))
             {
                 Directory.CreateDirectory(_replicaFolder);
                 Console.WriteLine($"Created replica folder: {_replicaFolder}");
             }
 
-            // Validate log file path
+            
             try
             {
                 var logDirectory = Path.GetDirectoryName(_logFilePath);
@@ -114,7 +114,7 @@ namespace FolderSynchronizer
                     Console.WriteLine($"Created log directory: {logDirectory}");
                 }
 
-                // Test if we can write to the log file
+                
                 using (var testWriter = new StreamWriter(_logFilePath, true))
                 {
                     testWriter.WriteLine($"Log file initialized at {DateTime.Now}");
@@ -153,7 +153,7 @@ namespace FolderSynchronizer
                 if (!_pendingChanges.Contains(e.FullPath))
                 {
                     _pendingChanges.Add(e.FullPath);
-                    LogMessage($"Detected {e.ChangeType} event for {e.FullPath}");
+                    LogMessage($"Detected {e.ChangeType} action for {e.FullPath}");
                 }
             }
         }
@@ -188,8 +188,8 @@ namespace FolderSynchronizer
                 }
                 else
                 {
-                    // Still perform a full sync to catch any changes that might have been missed
-                    LogMessage("Scheduled periodic synchronization started");
+                    
+                    LogMessage("Scheduled periodic synchroniztion started");
                     SynchronizeFolders();
                     LogMessage("Scheduled periodic synchronization completed");
                 }
@@ -200,23 +200,23 @@ namespace FolderSynchronizer
         {
             try
             {
-                // Get all files from source including subdirectories
+                
                 var sourceFiles = Directory.GetFiles(_sourceFolder, "*", SearchOption.AllDirectories)
                     .Select(f => new FileInfo(f))
                     .ToList();
 
-                // Get all files from replica including subdirectories
+                
                 var replicaFiles = Directory.GetFiles(_replicaFolder, "*", SearchOption.AllDirectories)
                     .Select(f => new FileInfo(f))
                     .ToList();
 
-                // Process each file in source
+                
                 foreach (var sourceFile in sourceFiles)
                 {
                     string relativePath = sourceFile.FullName.Substring(_sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar);
                     string replicaPath = Path.Combine(_replicaFolder, relativePath);
 
-                    // Ensure directory exists in replica
+                 
                     string replicaDirectory = Path.GetDirectoryName(replicaPath);
                     if (!Directory.Exists(replicaDirectory))
                     {
@@ -224,57 +224,52 @@ namespace FolderSynchronizer
                         LogMessage($"Created directory: {replicaDirectory}");
                     }
 
-                    // Check if file exists in replica
+                    
                     var replicaFile = replicaFiles.FirstOrDefault(f =>
                         f.FullName.Equals(replicaPath, StringComparison.OrdinalIgnoreCase));
 
                     if (replicaFile == null)
                     {
-                        // File doesn't exist in replica, copy it
+                        
                         File.Copy(sourceFile.FullName, replicaPath);
-                        LogMessage($"Copied file: {sourceFile.FullName} -> {replicaPath}");
+                        LogMessage($"Copied ffile: {sourceFile.FullName} -> {replicaPath}");
                     }
                     else
                     {
-                        // File exists, check if it's different
+                        
                         if (AreFilesDifferent(sourceFile.FullName, replicaPath))
                         {
                             File.Copy(sourceFile.FullName, replicaPath, true);
                             LogMessage($"Updated file: {sourceFile.FullName} -> {replicaPath}");
                         }
-
-                        // Remove from replica list as it's been processed
                         replicaFiles.Remove(replicaFile);
                     }
                 }
 
-                // Any files left in replicaFiles don't exist in source and should be deleted
                 foreach (var replicaFile in replicaFiles)
                 {
                     replicaFile.Delete();
-                    LogMessage($"Deleted file: {replicaFile.FullName}");
+                    LogMessage($"Deleted filse: {replicaFile.FullName}");
                 }
-
-                // Clean up empty directories in replica
-                CleanEmptyDirectories(_replicaFolder);
-            }
+                    CleanEmptyDirectories(_replicaFolder);
+            } 
             catch (Exception ex)
             {
-                LogMessage($"Error during synchronization: {ex.Message}");
-                Console.WriteLine($"Error during synchronization: {ex.Message}");
+                LogMessage($"Error whlist synchronizing: {ex.Message}");
+                Console.WriteLine($"Error whilst synchronizing: {ex.Message}");
             }
         }
 
         private static bool AreFilesDifferent(string file1, string file2)
         {
-            // First check file size - if different, no need to compare content
+       
             var fileInfo1 = new FileInfo(file1);
             var fileInfo2 = new FileInfo(file2);
 
             if (fileInfo1.Length != fileInfo2.Length)
                 return true;
 
-            // If same size, compare file hash
+            
             using (var md5 = MD5.Create())
             {
                 using (var stream1 = File.OpenRead(file1))
@@ -294,8 +289,7 @@ namespace FolderSynchronizer
             {
                 CleanEmptyDirectories(dir);
 
-                if (Directory.GetFiles(dir).Length == 0 &&
-                    Directory.GetDirectories(dir).Length == 0)
+                if (Directory.GetFiles(dir).Length == 0 && Directory.GetDirectories(dir).Length == 0)
                 {
                     Directory.Delete(dir);
                     LogMessage($"Deleted empty directory: {dir}");
@@ -309,9 +303,8 @@ namespace FolderSynchronizer
             Console.WriteLine(logMessage);
 
             lock (_logWriter)
-            {
-                _logWriter.WriteLine(logMessage);
-            }
+            { _logWriter.WriteLine(logMessage); }
+            
         }
     }
 }
